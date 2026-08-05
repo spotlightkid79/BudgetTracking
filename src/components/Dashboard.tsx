@@ -20,6 +20,7 @@ import { StatCard } from './ui/StatCard';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, formatMonthLabel, monthKeyOf, shiftMonthKey } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface DashboardProps {
@@ -33,6 +34,7 @@ type TrendPeriod = (typeof TREND_PERIODS)[number];
 
 export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
   const { t, intlLocale } = useLanguage();
+  const { currency, convert } = useCurrency();
   const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>(6);
   const categoryById = useMemo(
     () => new Map(data.categories.map((c) => [c.id, c])),
@@ -46,14 +48,14 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
 
   const income = monthTransactions
     .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + convert(t.amount, t.date), 0);
   const expenses = monthTransactions
     .filter((t) => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + convert(t.amount, t.date), 0);
   const net = income - expenses;
 
   const allTimeBalance = data.transactions.reduce(
-    (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount),
+    (sum, t) => sum + (t.type === 'income' ? convert(t.amount, t.date) : -convert(t.amount, t.date)),
     0
   );
 
@@ -61,7 +63,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
     const totals = new Map<string, number>();
     for (const t of monthTransactions) {
       if (t.type !== 'expense') continue;
-      totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
+      totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + convert(t.amount, t.date));
     }
     return Array.from(totals.entries())
       .map(([categoryId, value]) => {
@@ -73,13 +75,13 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
         };
       })
       .sort((a, b) => b.value - a.value);
-  }, [monthTransactions, categoryById, t]);
+  }, [monthTransactions, categoryById, t, convert]);
 
   const accountBreakdown = useMemo(() => {
     const totals = new Map<string, number>();
     for (const t of monthTransactions) {
       if (t.type !== 'expense' || !t.accountId) continue;
-      totals.set(t.accountId, (totals.get(t.accountId) ?? 0) + t.amount);
+      totals.set(t.accountId, (totals.get(t.accountId) ?? 0) + convert(t.amount, t.date));
     }
     return Array.from(totals.entries())
       .map(([accountId, value]) => {
@@ -91,7 +93,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
         };
       })
       .sort((a, b) => b.value - a.value);
-  }, [monthTransactions, data.accounts, t]);
+  }, [monthTransactions, data.accounts, t, convert]);
 
   const trend = useMemo(() => {
     const months = Array.from({ length: trendPeriod }, (_, i) =>
@@ -101,11 +103,11 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       const txs = data.transactions.filter((t) => monthKeyOf(t.date) === mk);
       return {
         month: formatMonthLabel(mk, intlLocale).split(' ')[0],
-        Income: txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
-        Expenses: txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+        Income: txs.filter((t) => t.type === 'income').reduce((s, t) => s + convert(t.amount, t.date), 0),
+        Expenses: txs.filter((t) => t.type === 'expense').reduce((s, t) => s + convert(t.amount, t.date), 0),
       };
     });
-  }, [data.transactions, monthKey, intlLocale, trendPeriod]);
+  }, [data.transactions, monthKey, intlLocale, trendPeriod, convert]);
 
   const cumulativeTrend = useMemo(() => {
     const [year, month] = monthKey.split('-').map(Number);
@@ -115,8 +117,9 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
     for (const t of monthTransactions) {
       const day = Number(t.date.slice(8, 10));
       const entry = byDay.get(day) ?? { income: 0, expense: 0 };
-      if (t.type === 'income') entry.income += t.amount;
-      else entry.expense += t.amount;
+      const converted = convert(t.amount, t.date);
+      if (t.type === 'income') entry.income += converted;
+      else entry.expense += converted;
       byDay.set(day, entry);
     }
 
@@ -131,7 +134,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       }
       return { day, Income: cumIncome, Expenses: cumExpense };
     });
-  }, [monthTransactions, monthKey]);
+  }, [monthTransactions, monthKey, convert]);
 
   const exceededDay = cumulativeTrend.find((d) => d.Expenses > d.Income)?.day;
 
@@ -140,18 +143,19 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       .map((b) => {
         const spent = monthTransactions
           .filter((t) => t.type === 'expense' && t.categoryId === b.categoryId)
-          .reduce((sum, t) => sum + t.amount, 0);
+          .reduce((sum, t) => sum + convert(t.amount, t.date), 0);
+        const limit = convert(b.monthlyLimit);
         return {
           category: categoryById.get(b.categoryId),
           spent,
-          limit: b.monthlyLimit,
-          percent: b.monthlyLimit > 0 ? Math.min(100, (spent / b.monthlyLimit) * 100) : 0,
-          over: spent > b.monthlyLimit,
+          limit,
+          percent: limit > 0 ? Math.min(100, (spent / limit) * 100) : 0,
+          over: spent > limit,
         };
       })
       .filter((b) => b.category)
       .sort((a, b) => b.spent / (b.limit || 1) - a.spent / (a.limit || 1));
-  }, [data.budgets, monthTransactions, categoryById]);
+  }, [data.budgets, monthTransactions, categoryById, convert]);
 
   return (
     <div className="space-y-6">
@@ -163,25 +167,25 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t('dashboard.income')}
-          value={formatCurrency(income)}
+          value={formatCurrency(income, currency)}
           icon={<ArrowUpCircle size={22} />}
           tone="positive"
         />
         <StatCard
           label={t('dashboard.expenses')}
-          value={formatCurrency(expenses)}
+          value={formatCurrency(expenses, currency)}
           icon={<ArrowDownCircle size={22} />}
           tone="negative"
         />
         <StatCard
           label={t('dashboard.netThisMonth')}
-          value={formatCurrency(net)}
+          value={formatCurrency(net, currency)}
           icon={<Scale size={22} />}
           tone={net >= 0 ? 'positive' : 'negative'}
         />
         <StatCard
           label={t('dashboard.overallBalance')}
-          value={formatCurrency(allTimeBalance)}
+          value={formatCurrency(allTimeBalance, currency)}
           icon={<Wallet size={22} />}
         />
       </div>
@@ -208,7 +212,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v), currency)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
@@ -240,8 +244,8 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
             <BarChart data={trend}>
               <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={60} tickFormatter={(v) => formatCurrency(v)} />
-              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={60} tickFormatter={(v) => formatCurrency(v, currency)} />
+              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v), currency)} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="Income" name={t('common.income')} fill="#10b981" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Expenses" name={t('common.expenses')} fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -272,7 +276,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v), currency)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
@@ -302,10 +306,10 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
               tick={{ fontSize: 12 }}
               stroke="#94a3b8"
             />
-            <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
+            <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v, currency)} />
             <Tooltip
               labelFormatter={(day) => t('dashboard.dayLabel', { day: day as number })}
-              formatter={(v: unknown) => formatCurrency(Number(v))}
+              formatter={(v: unknown) => formatCurrency(Number(v), currency)}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line type="monotone" dataKey="Income" name={t('common.income')} stroke="#10b981" strokeWidth={2} dot={false} />
@@ -327,7 +331,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
                     {categoryDisplayName(category!, t)}
                   </span>
                   <span className={over ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}>
-                    {formatCurrency(spent)} / {formatCurrency(limit)}
+                    {formatCurrency(spent, currency)} / {formatCurrency(limit, currency)}
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">

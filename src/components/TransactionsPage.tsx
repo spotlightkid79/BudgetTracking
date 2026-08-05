@@ -5,6 +5,7 @@ import { TransactionForm } from './TransactionForm';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface TransactionsPageProps {
@@ -25,6 +26,7 @@ export function TransactionsPage({
   onDelete,
 }: TransactionsPageProps) {
   const { t } = useLanguage();
+  const { currency, convert } = useCurrency();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | undefined>(undefined);
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -171,7 +173,7 @@ export function TransactionsPage({
                     }`}
                   >
                     {tx.type === 'income' ? '+' : '-'}
-                    {formatCurrency(tx.amount)}
+                    {formatCurrency(convert(tx.amount, tx.date), currency)}
                   </span>
                   <button
                     onClick={() => openEdit(tx)}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   Banknote,
@@ -30,6 +30,8 @@ import { currentMonthKey } from './lib/format';
 import { exportBudgetAsMarkdown } from './lib/exportMarkdown';
 import { exportBudgetAsJson, parseBudgetJson } from './lib/backup';
 import { useLanguage } from './lib/i18n/LanguageContext';
+import { CurrencyProvider } from './lib/currency/CurrencyContext';
+import { CurrencyToggle, CurrencyToggleIcon } from './components/ui/CurrencyToggle';
 import type { BudgetData } from './types';
 
 type Tab = 'dashboard' | 'calendar' | 'transactions' | 'budgets' | 'recurring' | 'salary' | 'import';
@@ -143,6 +145,7 @@ function App() {
     replaceAll,
     addAccount,
   } = useBudgetData();
+  const txDates = useMemo(() => data.transactions.map((tx) => tx.date), [data.transactions]);
   const { save, justSaved } = useSaveToMarkdown(data);
   const {
     fileInputRef,
@@ -154,6 +157,7 @@ function App() {
   } = useBackup(data, replaceAll);
 
   return (
+    <CurrencyProvider dates={txDates}>
     <div className="min-h-svh bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <input
         ref={fileInputRef}
@@ -217,6 +221,7 @@ function App() {
             </span>
             {!collapsed && (lang === 'en' ? 'Türkçe' : 'English')}
           </button>
+          <CurrencyToggle collapsed={collapsed} />
           <button
             onClick={saveBackup}
             title={collapsed ? t('app.saveBackup') : undefined}
@@ -289,6 +294,7 @@ function App() {
                   {lang}
                 </span>
               </button>
+              <CurrencyToggleIcon />
               <button
                 onClick={saveBackup}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -379,6 +385,7 @@ function App() {
         </div>
       </div>
     </div>
+    </CurrencyProvider>
   );
 }
 

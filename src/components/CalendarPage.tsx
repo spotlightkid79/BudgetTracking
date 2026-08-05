@@ -27,6 +27,7 @@ import {
   WEEK_STARTS_ON,
 } from '../lib/calendarUtils';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface CalendarPageProps {
@@ -44,6 +45,7 @@ const NEGATIVE_COLOR = '#e11d48';
 
 export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPageProps) {
   const { t, dateLocale } = useLanguage();
+  const { currency, convert } = useCurrency();
   const WEEKDAY_LABELS = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) =>
@@ -75,8 +77,8 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
 
   function dayTotals(key: string) {
     const list = byDate.get(key) ?? [];
-    const income = list.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expense = list.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const income = list.filter((t) => t.type === 'income').reduce((s, t) => s + convert(t.amount, t.date), 0);
+    const expense = list.filter((t) => t.type === 'expense').reduce((s, t) => s + convert(t.amount, t.date), 0);
     return { income, expense, net: income - expense, transactions: list };
   }
 
@@ -95,7 +97,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
       { income: 0, expense: 0 }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleDays, byDate, viewMode, anchor]);
+  }, [visibleDays, byDate, viewMode, anchor, convert]);
 
   const chartData = useMemo(
     () =>
@@ -105,7 +107,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
         net: Math.round(dayTotals(dateKey(d)).net),
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visibleDays, byDate, viewMode, dateLocale]
+    [visibleDays, byDate, viewMode, dateLocale, convert]
   );
 
   const periodLabel =
@@ -188,11 +190,11 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label={t('calendar.income')} value={formatCurrency(periodTotals.income)} icon={<ArrowUpCircle size={22} />} tone="positive" />
-        <StatCard label={t('calendar.expenses')} value={formatCurrency(periodTotals.expense)} icon={<ArrowDownCircle size={22} />} tone="negative" />
+        <StatCard label={t('calendar.income')} value={formatCurrency(periodTotals.income, currency)} icon={<ArrowUpCircle size={22} />} tone="positive" />
+        <StatCard label={t('calendar.expenses')} value={formatCurrency(periodTotals.expense, currency)} icon={<ArrowDownCircle size={22} />} tone="negative" />
         <StatCard
           label={t('calendar.net')}
-          value={formatCurrency(periodTotals.income - periodTotals.expense)}
+          value={formatCurrency(periodTotals.income - periodTotals.expense, currency)}
           icon={<Scale size={22} />}
           tone={periodTotals.income - periodTotals.expense >= 0 ? 'positive' : 'negative'}
         />
@@ -207,8 +209,8 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
               <XAxis dataKey="label" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
-              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v, currency)} />
+              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v), currency)} />
               <Bar dataKey="net" radius={[4, 4, 4, 4]}>
                 {chartData.map((d) => (
                   <Cell key={d.key} fill={d.net >= 0 ? POSITIVE_COLOR : NEGATIVE_COLOR} />
@@ -257,12 +259,12 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                     </span>
                     {income > 0 && (
                       <span className="w-full truncate text-[9px] font-medium text-emerald-600 dark:text-emerald-400 sm:text-[11px]">
-                        +{formatCurrencyCompact(income)}
+                        +{formatCurrencyCompact(income, currency)}
                       </span>
                     )}
                     {expense > 0 && (
                       <span className="w-full truncate text-[9px] font-medium text-rose-600 dark:text-rose-400 sm:text-[11px]">
-                        -{formatCurrencyCompact(expense)}
+                        -{formatCurrencyCompact(expense, currency)}
                       </span>
                     )}
                   </button>
@@ -309,7 +311,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                         }`}
                       >
                         {tx.type === 'income' ? '+' : '-'}
-                        {formatCurrency(tx.amount)}
+                        {formatCurrency(convert(tx.amount, tx.date), currency)}
                       </span>
                       <button
                         onClick={() => openEdit(tx)}
@@ -405,7 +407,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                             }`}
                           >
                             {tx.type === 'income' ? '+' : '-'}
-                            {formatCurrency(tx.amount)}
+                            {formatCurrency(convert(tx.amount, tx.date), currency)}
                           </span>
                         </li>
                       );
@@ -415,7 +417,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                 {(income > 0 || expense > 0) && (
                   <div className="border-t border-slate-100 px-3 py-2 text-right text-xs font-semibold dark:border-slate-700">
                     <span className={net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                      {formatCurrency(net)}
+                      {formatCurrency(net, currency)}
                     </span>
                   </div>
                 )}

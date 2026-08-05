@@ -15,6 +15,7 @@ import { DEFAULT_PAYROLL_PARAMS, calcYearlyPayroll, type PayrollParams } from '.
 import { formatCurrency } from '../lib/format';
 import { StatCard } from './ui/StatCard';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface SalaryPageProps {
@@ -33,6 +34,7 @@ function toPercentDisplay(rate: number): number {
 
 export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
   const { t, intlLocale } = useLanguage();
+  const { currency, convert } = useCurrency();
   const monthNames = useMemo(
     () =>
       Array.from({ length: 12 }, (_, i) =>
@@ -59,14 +61,33 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
     return calcYearlyPayroll({ ...params, grossMonthly: gross });
   }, [grossMonthly, params]);
 
+  const convertedResults = useMemo(() => {
+    if (!results) return null;
+    return results.map((r) => {
+      const date = `${year}-${String(r.month).padStart(2, '0')}-01`;
+      const sgkDeduction = convert(r.sgkDeduction, date);
+      const incomeTax = convert(r.incomeTax, date);
+      const stampDuty = convert(r.stampDuty, date);
+      return {
+        month: r.month,
+        gross: convert(r.gross, date),
+        sgkDeduction,
+        incomeTax,
+        stampDuty,
+        totalDeductions: sgkDeduction + incomeTax + stampDuty,
+        net: convert(r.net, date),
+      };
+    });
+  }, [results, year, convert]);
+
   const chartData = useMemo(() => {
-    if (!results) return [];
-    return results.map((r) => ({
+    if (!convertedResults) return [];
+    return convertedResults.map((r) => ({
       month: monthNames[r.month - 1].slice(0, 3),
       Net: Math.round(r.net),
       Deductions: Math.round(r.totalDeductions),
     }));
-  }, [results, monthNames]);
+  }, [convertedResults, monthNames]);
 
   function updateParam<K extends keyof PayrollParams>(key: K, value: PayrollParams[K]) {
     setParams((p) => ({ ...p, [key]: value }));
@@ -112,9 +133,9 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
     );
   }
 
-  const firstMonthNet = results?.[0]?.net ?? 0;
-  const lastMonthNet = results?.[11]?.net ?? 0;
-  const annualNet = results?.reduce((sum, r) => sum + r.net, 0) ?? 0;
+  const firstMonthNet = convertedResults?.[0]?.net ?? 0;
+  const lastMonthNet = convertedResults?.[11]?.net ?? 0;
+  const annualNet = convertedResults?.reduce((sum, r) => sum + r.net, 0) ?? 0;
 
   return (
     <div className="space-y-6">
@@ -280,9 +301,9 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
       {results && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label={t('salary.januaryNetPay')} value={formatCurrency(firstMonthNet)} icon={<span className="text-sm font-bold">1</span>} />
-            <StatCard label={t('salary.decemberNetPay')} value={formatCurrency(lastMonthNet)} icon={<span className="text-sm font-bold">12</span>} tone={lastMonthNet < firstMonthNet ? 'negative' : 'default'} />
-            <StatCard label={t('salary.totalNetForYear', { year })} value={formatCurrency(annualNet)} icon={<span className="text-sm font-bold">∑</span>} tone="positive" />
+            <StatCard label={t('salary.januaryNetPay')} value={formatCurrency(firstMonthNet, currency)} icon={<span className="text-sm font-bold">1</span>} />
+            <StatCard label={t('salary.decemberNetPay')} value={formatCurrency(lastMonthNet, currency)} icon={<span className="text-sm font-bold">12</span>} tone={lastMonthNet < firstMonthNet ? 'negative' : 'default'} />
+            <StatCard label={t('salary.totalNetForYear', { year })} value={formatCurrency(annualNet, currency)} icon={<span className="text-sm font-bold">∑</span>} tone="positive" />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
@@ -293,8 +314,8 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
-                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+                <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v, currency)} />
+                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v), currency)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="Net" name={t('salary.net')} stackId="pay" fill={NET_COLOR} radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Deductions" name={t('salary.deductions')} stackId="pay" fill={DEDUCTIONS_COLOR} radius={[4, 4, 0, 0]} />
@@ -315,25 +336,25 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {results.map((r) => (
+                {(convertedResults ?? []).map((r) => (
                   <tr key={r.month}>
                     <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-200">
                       {monthNames[r.month - 1]} {year}
                     </td>
                     <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">
-                      {formatCurrency(r.gross)}
+                      {formatCurrency(r.gross, currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">
-                      -{formatCurrency(r.sgkDeduction)}
+                      -{formatCurrency(r.sgkDeduction, currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">
-                      -{formatCurrency(r.incomeTax)}
+                      -{formatCurrency(r.incomeTax, currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right text-slate-500 dark:text-slate-400">
-                      -{formatCurrency(r.stampDuty)}
+                      -{formatCurrency(r.stampDuty, currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right font-semibold text-teal-700 dark:text-teal-400">
-                      {formatCurrency(r.net)}
+                      {formatCurrency(r.net, currency)}
                     </td>
                   </tr>
                 ))}

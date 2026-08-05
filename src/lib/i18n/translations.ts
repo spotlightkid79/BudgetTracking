@@ -37,6 +37,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.saveAsMarkdown': 'Save as .md',
     'app.lightMode': 'Light mode',
     'app.darkMode': 'Dark mode',
+    'app.currencyTRY': 'TRY',
+    'app.currencyEUR': 'EUR',
+    'app.ratesLoading': 'Loading exchange rates…',
+    'app.ratesError': "Couldn't fetch exchange rates — showing TRY",
     'app.confirmReplace':
       'This will replace everything currently in Budgetly with the contents of "{file}". This cannot be undone. Continue?',
     'app.couldNotReadFile': 'Could not read that file.',
@@ -264,6 +268,10 @@ export const translations: Record<Lang, Record<string, string>> = {
     'app.saveAsMarkdown': '.md olarak kaydet',
     'app.lightMode': 'Aydınlık mod',
     'app.darkMode': 'Karanlık mod',
+    'app.currencyTRY': 'TRY',
+    'app.currencyEUR': 'EUR',
+    'app.ratesLoading': 'Döviz kuru yükleniyor…',
+    'app.ratesError': 'Döviz kuru alınamadı — TL gösteriliyor',
     'app.confirmReplace':
       'Bu işlem, Budgetly\'deki tüm mevcut verilerin yerine "{file}" dosyasının içeriğini koyacak. Bu geri alınamaz. Devam edilsin mi?',
     'app.couldNotReadFile': 'Dosya okunamadı.',

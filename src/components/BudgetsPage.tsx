@@ -3,6 +3,7 @@ import type { BudgetData } from '../types';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface BudgetsPageProps {
@@ -21,6 +22,7 @@ export function BudgetsPage({
   onRemoveBudget,
 }: BudgetsPageProps) {
   const { t } = useLanguage();
+  const { currency, convert } = useCurrency();
   const expenseCategories = useMemo(
     () => data.categories.filter((c) => c.type === 'expense'),
     [data.categories]
@@ -41,19 +43,21 @@ export function BudgetsPage({
   function spentFor(categoryId: string) {
     return monthExpenses
       .filter((t) => t.categoryId === categoryId)
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + convert(t.amount, t.date), 0);
   }
 
   function handleSave(categoryId: string) {
     const raw = drafts[categoryId];
-    const value = parseFloat(raw);
-    if (!isNaN(value) && value > 0) {
-      onSetBudget(categoryId, value);
-      setDrafts((d) => ({ ...d, [categoryId]: '' }));
-    }
+    const typed = parseFloat(raw);
+    if (isNaN(typed) || typed <= 0) return;
+    // Inputs are entered in the currently displayed currency; store everything in TRY.
+    const rate = convert(1);
+    const value = currency === 'EUR' ? typed / rate : typed;
+    onSetBudget(categoryId, value);
+    setDrafts((d) => ({ ...d, [categoryId]: '' }));
   }
 
-  const totalLimit = data.budgets.reduce((sum, b) => sum + b.monthlyLimit, 0);
+  const totalLimit = data.budgets.reduce((sum, b) => sum + convert(b.monthlyLimit), 0);
   const totalSpent = data.budgets.reduce((sum, b) => sum + spentFor(b.categoryId), 0);
 
   return (
@@ -68,7 +72,7 @@ export function BudgetsPage({
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="font-medium text-slate-700 dark:text-slate-200">{t('budgets.totalBudgeted')}</span>
             <span className="text-slate-500 dark:text-slate-400">
-              {formatCurrency(totalSpent)} / {formatCurrency(totalLimit)}
+              {formatCurrency(totalSpent, currency)} / {formatCurrency(totalLimit, currency)}
             </span>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
@@ -84,10 +88,9 @@ export function BudgetsPage({
         {expenseCategories.map((category) => {
           const budget = budgetByCategory.get(category.id);
           const spent = spentFor(category.id);
-          const percent = budget && budget.monthlyLimit > 0
-            ? Math.min(100, (spent / budget.monthlyLimit) * 100)
-            : 0;
-          const over = budget ? spent > budget.monthlyLimit : false;
+          const limit = budget ? convert(budget.monthlyLimit) : 0;
+          const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : 0;
+          const over = budget ? spent > limit : false;
 
           return (
             <div
@@ -109,8 +112,8 @@ export function BudgetsPage({
                   <div className="mb-1 flex items-center justify-between text-xs">
                     <span className={over ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}>
                       {t('budgets.spentOfLimit', {
-                        spent: formatCurrency(spent),
-                        limit: formatCurrency(budget.monthlyLimit),
+                        spent: formatCurrency(spent, currency),
+                        limit: formatCurrency(limit, currency),
                       })}
                     </span>
                     <span className="text-slate-400">{Math.round(percent)}%</span>

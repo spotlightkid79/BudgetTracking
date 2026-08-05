@@ -4,6 +4,7 @@ import type { BudgetData, RecurringTransaction } from '../types';
 import { RecurringForm } from './RecurringForm';
 import { formatCurrency } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { useCurrency } from '../lib/currency/CurrencyContext';
 import { categoryDisplayName } from '../lib/categoryName';
 
 interface RecurringPageProps {
@@ -14,6 +15,7 @@ interface RecurringPageProps {
 
 export function RecurringPage({ data, onAdd, onDelete }: RecurringPageProps) {
   const { t } = useLanguage();
+  const { currency, convert } = useCurrency();
   const [formOpen, setFormOpen] = useState(false);
   const categoryById = useMemo(
     () => new Map(data.categories.map((c) => [c.id, c])),
@@ -63,7 +65,7 @@ export function RecurringPage({ data, onAdd, onDelete }: RecurringPageProps) {
                     }`}
                   >
                     {rule.type === 'income' ? '+' : '-'}
-                    {formatCurrency(rule.amount)}
+                    {formatCurrency(convert(rule.amount, rule.startDate), currency)}
                   </span>
                   <button
                     onClick={() => onDelete(rule.id)}

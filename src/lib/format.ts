@@ -1,22 +1,24 @@
-export const currencyFormatter = new Intl.NumberFormat('tr-TR', {
-  style: 'currency',
-  currency: 'TRY',
-  maximumFractionDigits: 2,
-});
+export type CurrencyCode = 'TRY' | 'EUR';
 
-export function formatCurrency(amount: number): string {
-  return currencyFormatter.format(amount);
+const CURRENCY_LOCALES: Record<CurrencyCode, string> = { TRY: 'tr-TR', EUR: 'de-DE' };
+
+function buildFormatters(maximumFractionDigits: number): Record<CurrencyCode, Intl.NumberFormat> {
+  return {
+    TRY: new Intl.NumberFormat(CURRENCY_LOCALES.TRY, { style: 'currency', currency: 'TRY', maximumFractionDigits }),
+    EUR: new Intl.NumberFormat(CURRENCY_LOCALES.EUR, { style: 'currency', currency: 'EUR', maximumFractionDigits }),
+  };
 }
 
-const compactCurrencyFormatter = new Intl.NumberFormat('tr-TR', {
-  style: 'currency',
-  currency: 'TRY',
-  maximumFractionDigits: 0,
-});
+const fullFormatters = buildFormatters(2);
+const compactFormatters = buildFormatters(0);
+
+export function formatCurrency(amount: number, currency: CurrencyCode = 'TRY'): string {
+  return fullFormatters[currency].format(amount);
+}
 
 /** Whole-number currency for tight spaces like calendar day cells. */
-export function formatCurrencyCompact(amount: number): string {
-  return compactCurrencyFormatter.format(amount);
+export function formatCurrencyCompact(amount: number, currency: CurrencyCode = 'TRY'): string {
+  return compactFormatters[currency].format(amount);
 }
 
 export function formatMonthLabel(monthKey: string, locale = 'en-US'): string {
