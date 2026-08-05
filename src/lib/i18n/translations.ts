@@ -2,6 +2,20 @@ export type Lang = 'en' | 'tr';
 
 export const translations: Record<Lang, Record<string, string>> = {
   en: {
+    // default categories
+    'category.cat-salary': 'Salary',
+    'category.cat-freelance': 'Freelance',
+    'category.cat-other-income': 'Other Income',
+    'category.cat-housing': 'Housing',
+    'category.cat-groceries': 'Groceries',
+    'category.cat-transport': 'Transport',
+    'category.cat-dining': 'Dining Out',
+    'category.cat-utilities': 'Utilities',
+    'category.cat-entertainment': 'Entertainment',
+    'category.cat-health': 'Health',
+    'category.cat-shopping': 'Shopping',
+    'category.cat-other-expense': 'Other',
+
     // nav
     'nav.dashboard': 'Dashboard',
     'nav.calendar': 'Calendar',
@@ -163,6 +177,20 @@ export const translations: Record<Lang, Record<string, string>> = {
     'salary.day': 'Day {day}',
   },
   tr: {
+    // default categories
+    'category.cat-salary': 'Maaş',
+    'category.cat-freelance': 'Serbest Çalışma',
+    'category.cat-other-income': 'Diğer Gelir',
+    'category.cat-housing': 'Konut',
+    'category.cat-groceries': 'Market',
+    'category.cat-transport': 'Ulaşım',
+    'category.cat-dining': 'Dışarıda Yemek',
+    'category.cat-utilities': 'Faturalar',
+    'category.cat-entertainment': 'Eğlence',
+    'category.cat-health': 'Sağlık',
+    'category.cat-shopping': 'Alışveriş',
+    'category.cat-other-expense': 'Diğer',
+
     // nav
     'nav.dashboard': 'Pano',
     'nav.calendar': 'Takvim',

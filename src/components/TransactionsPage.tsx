@@ -5,6 +5,7 @@ import { TransactionForm } from './TransactionForm';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface TransactionsPageProps {
   data: BudgetData;
@@ -104,7 +105,7 @@ export function TransactionsPage({
           <option value="all">{t('transactions.allCategories')}</option>
           {data.categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {categoryDisplayName(c, t)}
             </option>
           ))}
         </select>
@@ -127,7 +128,7 @@ export function TransactionsPage({
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                      {category?.name ?? t('common.unknown')}
+                      {category ? categoryDisplayName(category, t) : t('common.unknown')}
                       {tx.note && <span className="text-slate-400"> · {tx.note}</span>}
                     </p>
                     <p className="text-xs text-slate-400">{tx.date}</p>

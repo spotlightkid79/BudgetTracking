@@ -3,6 +3,7 @@ import type { BudgetData } from '../types';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface BudgetsPageProps {
   data: BudgetData;
@@ -99,7 +100,7 @@ export function BudgetsPage({
                   style={{ backgroundColor: category.color }}
                 />
                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  {category.name}
+                  {categoryDisplayName(category, t)}
                 </span>
               </div>
 

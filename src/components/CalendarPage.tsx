@@ -27,6 +27,7 @@ import {
   WEEK_STARTS_ON,
 } from '../lib/calendarUtils';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface CalendarPageProps {
   data: BudgetData;
@@ -296,7 +297,7 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                          {category?.name ?? t('common.unknown')}
+                          {category ? categoryDisplayName(category, t) : t('common.unknown')}
                           {tx.note && <span className="text-slate-400"> · {tx.note}</span>}
                         </p>
                       </div>
@@ -372,14 +373,14 @@ export function CalendarPage({ data, onAdd, onUpdate, onDelete }: CalendarPagePr
                     transactions.map((tx) => {
                       const category = categoryById.get(tx.categoryId);
                       return (
-                        <li key={tx.id} className="group px-3 py-2" title={category?.name ?? t('common.unknown')}>
+                        <li key={tx.id} className="group px-3 py-2" title={category ? categoryDisplayName(category, t) : t('common.unknown')}>
                           <div className="flex items-center gap-1.5">
                             <span
                               className="h-2 w-2 shrink-0 rounded-full"
                               style={{ backgroundColor: category?.color ?? '#94a3b8' }}
                             />
                             <span className="min-w-0 flex-1 truncate text-xs text-slate-600 dark:text-slate-300">
-                              {category?.name ?? t('common.unknown')}
+                              {category ? categoryDisplayName(category, t) : t('common.unknown')}
                             </span>
                             <button
                               onClick={() => openEdit(tx)}

@@ -4,6 +4,7 @@ import type { BudgetData, RecurringTransaction } from '../types';
 import { RecurringForm } from './RecurringForm';
 import { formatCurrency } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface RecurringPageProps {
   data: BudgetData;
@@ -47,7 +48,7 @@ export function RecurringPage({ data, onAdd, onDelete }: RecurringPageProps) {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                      {category?.name ?? t('common.unknown')}
+                      {category ? categoryDisplayName(category, t) : t('common.unknown')}
                       {rule.note && <span className="text-slate-400"> · {rule.note}</span>}
                     </p>
                     <p className="text-xs text-slate-400">

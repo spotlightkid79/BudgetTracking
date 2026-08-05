@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Category, Transaction, TransactionType } from '../types';
 import { Modal } from './ui/Modal';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface TransactionFormProps {
   categories: Category[];
@@ -98,7 +99,7 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
           >
             {filteredCategories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {categoryDisplayName(c, t)}
               </option>
             ))}
           </select>

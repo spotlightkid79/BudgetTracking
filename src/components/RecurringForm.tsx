@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Category, RecurrenceFrequency, RecurringTransaction, TransactionType } from '../types';
 import { Modal } from './ui/Modal';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface RecurringFormProps {
   categories: Category[];
@@ -93,7 +94,7 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
           >
             {filteredCategories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {categoryDisplayName(c, t)}
               </option>
             ))}
           </select>

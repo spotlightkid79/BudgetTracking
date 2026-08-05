@@ -20,6 +20,7 @@ import { StatCard } from './ui/StatCard';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, formatMonthLabel, monthKeyOf, shiftMonthKey } from '../lib/format';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface DashboardProps {
   data: BudgetData;
@@ -59,13 +60,16 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
     }
     return Array.from(totals.entries())
-      .map(([categoryId, value]) => ({
-        name: categoryById.get(categoryId)?.name ?? 'Unknown',
-        value,
-        color: categoryById.get(categoryId)?.color ?? '#94a3b8',
-      }))
+      .map(([categoryId, value]) => {
+        const category = categoryById.get(categoryId);
+        return {
+          name: category ? categoryDisplayName(category, t) : t('common.unknown'),
+          value,
+          color: category?.color ?? '#94a3b8',
+        };
+      })
       .sort((a, b) => b.value - a.value);
-  }, [monthTransactions, categoryById]);
+  }, [monthTransactions, categoryById, t]);
 
   const trend = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => shiftMonthKey(monthKey, i - 5));
@@ -249,7 +253,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
               <div key={category!.id}>
                 <div className="mb-1 flex items-center justify-between text-sm">
                   <span className="font-medium text-slate-700 dark:text-slate-200">
-                    {category!.name}
+                    {categoryDisplayName(category!, t)}
                   </span>
                   <span className={over ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}>
                     {formatCurrency(spent)} / {formatCurrency(limit)}

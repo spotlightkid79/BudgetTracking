@@ -15,6 +15,7 @@ import { DEFAULT_PAYROLL_PARAMS, calcYearlyPayroll, type PayrollParams } from '.
 import { formatCurrency } from '../lib/format';
 import { StatCard } from './ui/StatCard';
 import { useLanguage } from '../lib/i18n/LanguageContext';
+import { categoryDisplayName } from '../lib/categoryName';
 
 interface SalaryPageProps {
   data: BudgetData;
@@ -162,7 +163,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
             >
               {incomeCategories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {categoryDisplayName(c, t)}
                 </option>
               ))}
             </select>
