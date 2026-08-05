@@ -1,0 +1,266 @@
+import { useMemo } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { ArrowDownCircle, ArrowUpCircle, Scale, Wallet } from 'lucide-react';
+import type { BudgetData } from '../types';
+import { StatCard } from './ui/StatCard';
+import { MonthSwitcher } from './ui/MonthSwitcher';
+import { formatCurrency, formatMonthLabel, monthKeyOf, shiftMonthKey } from '../lib/format';
+
+interface DashboardProps {
+  data: BudgetData;
+  monthKey: string;
+  onMonthChange: (monthKey: string) => void;
+}
+
+export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
+  const categoryById = useMemo(
+    () => new Map(data.categories.map((c) => [c.id, c])),
+    [data.categories]
+  );
+
+  const monthTransactions = useMemo(
+    () => data.transactions.filter((t) => monthKeyOf(t.date) === monthKey),
+    [data.transactions, monthKey]
+  );
+
+  const income = monthTransactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const expenses = monthTransactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const net = income - expenses;
+
+  const allTimeBalance = data.transactions.reduce(
+    (sum, t) => sum + (t.type === 'income' ? t.amount : -t.amount),
+    0
+  );
+
+  const categoryBreakdown = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const t of monthTransactions) {
+      if (t.type !== 'expense') continue;
+      totals.set(t.categoryId, (totals.get(t.categoryId) ?? 0) + t.amount);
+    }
+    return Array.from(totals.entries())
+      .map(([categoryId, value]) => ({
+        name: categoryById.get(categoryId)?.name ?? 'Unknown',
+        value,
+        color: categoryById.get(categoryId)?.color ?? '#94a3b8',
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [monthTransactions, categoryById]);
+
+  const trend = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => shiftMonthKey(monthKey, i - 5));
+    return months.map((mk) => {
+      const txs = data.transactions.filter((t) => monthKeyOf(t.date) === mk);
+      return {
+        month: formatMonthLabel(mk).split(' ')[0],
+        Income: txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+        Expenses: txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+      };
+    });
+  }, [data.transactions, monthKey]);
+
+  const cumulativeTrend = useMemo(() => {
+    const [year, month] = monthKey.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const byDay = new Map<number, { income: number; expense: number }>();
+    for (const t of monthTransactions) {
+      const day = Number(t.date.slice(8, 10));
+      const entry = byDay.get(day) ?? { income: 0, expense: 0 };
+      if (t.type === 'income') entry.income += t.amount;
+      else entry.expense += t.amount;
+      byDay.set(day, entry);
+    }
+
+    let cumIncome = 0;
+    let cumExpense = 0;
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      const entry = byDay.get(day);
+      if (entry) {
+        cumIncome += entry.income;
+        cumExpense += entry.expense;
+      }
+      return { day, Income: cumIncome, Expenses: cumExpense };
+    });
+  }, [monthTransactions, monthKey]);
+
+  const exceededDay = cumulativeTrend.find((d) => d.Expenses > d.Income)?.day;
+
+  const budgetProgress = useMemo(() => {
+    return data.budgets
+      .map((b) => {
+        const spent = monthTransactions
+          .filter((t) => t.type === 'expense' && t.categoryId === b.categoryId)
+          .reduce((sum, t) => sum + t.amount, 0);
+        return {
+          category: categoryById.get(b.categoryId),
+          spent,
+          limit: b.monthlyLimit,
+          percent: b.monthlyLimit > 0 ? Math.min(100, (spent / b.monthlyLimit) * 100) : 0,
+          over: spent > b.monthlyLimit,
+        };
+      })
+      .filter((b) => b.category)
+      .sort((a, b) => b.spent / (b.limit || 1) - a.spent / (a.limit || 1));
+  }, [data.budgets, monthTransactions, categoryById]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Dashboard</h1>
+        <MonthSwitcher monthKey={monthKey} onChange={onMonthChange} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Income"
+          value={formatCurrency(income)}
+          icon={<ArrowUpCircle size={22} />}
+          tone="positive"
+        />
+        <StatCard
+          label="Expenses"
+          value={formatCurrency(expenses)}
+          icon={<ArrowDownCircle size={22} />}
+          tone="negative"
+        />
+        <StatCard
+          label="Net this month"
+          value={formatCurrency(net)}
+          icon={<Scale size={22} />}
+          tone={net >= 0 ? 'positive' : 'negative'}
+        />
+        <StatCard
+          label="Overall balance"
+          value={formatCurrency(allTimeBalance)}
+          icon={<Wallet size={22} />}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:col-span-2">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Spending by category
+          </h2>
+          {categoryBreakdown.length === 0 ? (
+            <p className="py-12 text-center text-sm text-slate-400">No expenses this month</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={categoryBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={55}
+                  outerRadius={90}
+                  paddingAngle={2}
+                >
+                  {categoryBreakdown.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:col-span-3">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Income vs expenses (6 months)
+          </h2>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={trend}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+              <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={60} tickFormatter={(v) => formatCurrency(v)} />
+              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Cumulative income vs. expenses this month
+          </h2>
+          <p className="text-xs text-slate-400">
+            {exceededDay
+              ? `Expenses first exceeded income on day ${exceededDay}`
+              : 'Expenses have not exceeded income this month'}
+          </p>
+        </div>
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={cumulativeTrend}>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
+            <XAxis
+              dataKey="day"
+              type="number"
+              domain={[1, cumulativeTrend.length]}
+              allowDecimals={false}
+              tick={{ fontSize: 12 }}
+              stroke="#94a3b8"
+            />
+            <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
+            <Tooltip labelFormatter={(day) => `Day ${day}`} formatter={(v: unknown) => formatCurrency(Number(v))} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Line type="monotone" dataKey="Income" stroke="#10b981" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Expenses" stroke="#ef4444" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {budgetProgress.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Budget progress
+          </h2>
+          <div className="space-y-4">
+            {budgetProgress.map(({ category, spent, limit, percent, over }) => (
+              <div key={category!.id}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                    {category!.name}
+                  </span>
+                  <span className={over ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}>
+                    {formatCurrency(spent)} / {formatCurrency(limit)}
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full ${over ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
