@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -28,8 +28,12 @@ interface DashboardProps {
   onMonthChange: (monthKey: string) => void;
 }
 
+const TREND_PERIODS = [3, 6, 12] as const;
+type TrendPeriod = (typeof TREND_PERIODS)[number];
+
 export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
   const { t, intlLocale } = useLanguage();
+  const [trendPeriod, setTrendPeriod] = useState<TrendPeriod>(6);
   const categoryById = useMemo(
     () => new Map(data.categories.map((c) => [c.id, c])),
     [data.categories]
@@ -90,7 +94,9 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
   }, [monthTransactions, data.accounts, t]);
 
   const trend = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => shiftMonthKey(monthKey, i - 5));
+    const months = Array.from({ length: trendPeriod }, (_, i) =>
+      shiftMonthKey(monthKey, i - (trendPeriod - 1))
+    );
     return months.map((mk) => {
       const txs = data.transactions.filter((t) => monthKeyOf(t.date) === mk);
       return {
@@ -99,7 +105,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
         Expenses: txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
       };
     });
-  }, [data.transactions, monthKey, intlLocale]);
+  }, [data.transactions, monthKey, intlLocale, trendPeriod]);
 
   const cumulativeTrend = useMemo(() => {
     const [year, month] = monthKey.split('-').map(Number);
@@ -210,9 +216,26 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:col-span-3">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            {t('dashboard.incomeVsExpenses6mo')}
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {t('dashboard.incomeVsExpenses6mo')}
+            </h2>
+            <div className="flex items-center rounded-full border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-800">
+              {TREND_PERIODS.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setTrendPeriod(period)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    trendPeriod === period
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {t(`dashboard.period${period}mo`)}
+                </button>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={trend}>
               <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-100 dark:text-slate-700" />
