@@ -19,6 +19,7 @@ import type { BudgetData } from '../types';
 import { StatCard } from './ui/StatCard';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, formatMonthLabel, monthKeyOf, shiftMonthKey } from '../lib/format';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface DashboardProps {
   data: BudgetData;
@@ -27,6 +28,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
+  const { t, intlLocale } = useLanguage();
   const categoryById = useMemo(
     () => new Map(data.categories.map((c) => [c.id, c])),
     [data.categories]
@@ -70,12 +72,12 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
     return months.map((mk) => {
       const txs = data.transactions.filter((t) => monthKeyOf(t.date) === mk);
       return {
-        month: formatMonthLabel(mk).split(' ')[0],
+        month: formatMonthLabel(mk, intlLocale).split(' ')[0],
         Income: txs.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0),
         Expenses: txs.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
       };
     });
-  }, [data.transactions, monthKey]);
+  }, [data.transactions, monthKey, intlLocale]);
 
   const cumulativeTrend = useMemo(() => {
     const [year, month] = monthKey.split('-').map(Number);
@@ -126,31 +128,31 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t('dashboard.title')}</h1>
         <MonthSwitcher monthKey={monthKey} onChange={onMonthChange} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Income"
+          label={t('dashboard.income')}
           value={formatCurrency(income)}
           icon={<ArrowUpCircle size={22} />}
           tone="positive"
         />
         <StatCard
-          label="Expenses"
+          label={t('dashboard.expenses')}
           value={formatCurrency(expenses)}
           icon={<ArrowDownCircle size={22} />}
           tone="negative"
         />
         <StatCard
-          label="Net this month"
+          label={t('dashboard.netThisMonth')}
           value={formatCurrency(net)}
           icon={<Scale size={22} />}
           tone={net >= 0 ? 'positive' : 'negative'}
         />
         <StatCard
-          label="Overall balance"
+          label={t('dashboard.overallBalance')}
           value={formatCurrency(allTimeBalance)}
           icon={<Wallet size={22} />}
         />
@@ -159,10 +161,10 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:col-span-2">
           <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Spending by category
+            {t('dashboard.spendingByCategory')}
           </h2>
           {categoryBreakdown.length === 0 ? (
-            <p className="py-12 text-center text-sm text-slate-400">No expenses this month</p>
+            <p className="py-12 text-center text-sm text-slate-400">{t('dashboard.noExpensesThisMonth')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -187,7 +189,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:col-span-3">
           <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Income vs expenses (6 months)
+            {t('dashboard.incomeVsExpenses6mo')}
           </h2>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={trend}>
@@ -196,8 +198,8 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
               <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={60} tickFormatter={(v) => formatCurrency(v)} />
               <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" name={t('common.income')} fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Expenses" name={t('common.expenses')} fill="#ef4444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -206,12 +208,12 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Cumulative income vs. expenses this month
+            {t('dashboard.cumulativeChartTitle')}
           </h2>
           <p className="text-xs text-slate-400">
             {exceededDay
-              ? `Expenses first exceeded income on day ${exceededDay}`
-              : 'Expenses have not exceeded income this month'}
+              ? t('dashboard.exceededOnDay', { day: exceededDay })
+              : t('dashboard.notExceeded')}
           </p>
         </div>
         <ResponsiveContainer width="100%" height={240}>
@@ -226,10 +228,13 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
               stroke="#94a3b8"
             />
             <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
-            <Tooltip labelFormatter={(day) => `Day ${day}`} formatter={(v: unknown) => formatCurrency(Number(v))} />
+            <Tooltip
+              labelFormatter={(day) => t('dashboard.dayLabel', { day: day as number })}
+              formatter={(v: unknown) => formatCurrency(Number(v))}
+            />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line type="monotone" dataKey="Income" stroke="#10b981" strokeWidth={2} dot={false} />
-            <Line type="monotone" dataKey="Expenses" stroke="#ef4444" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Income" name={t('common.income')} stroke="#10b981" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="Expenses" name={t('common.expenses')} stroke="#ef4444" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -237,7 +242,7 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       {budgetProgress.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Budget progress
+            {t('dashboard.budgetProgress')}
           </h2>
           <div className="space-y-4">
             {budgetProgress.map(({ category, spent, limit, percent, over }) => (

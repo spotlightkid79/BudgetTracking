@@ -27,17 +27,18 @@ import { SalaryPage } from './components/SalaryPage';
 import { currentMonthKey } from './lib/format';
 import { exportBudgetAsMarkdown } from './lib/exportMarkdown';
 import { exportBudgetAsJson, parseBudgetJson } from './lib/backup';
+import { useLanguage } from './lib/i18n/LanguageContext';
 import type { BudgetData } from './types';
 
 type Tab = 'dashboard' | 'calendar' | 'transactions' | 'budgets' | 'recurring' | 'salary';
 
-const NAV_ITEMS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-  { id: 'transactions', label: 'Transactions', icon: ListOrdered },
-  { id: 'budgets', label: 'Budgets', icon: PiggyBank },
-  { id: 'recurring', label: 'Recurring', icon: Repeat },
-  { id: 'salary', label: 'Salary', icon: Banknote },
+const NAV_ITEMS: { id: Tab; labelKey: string; icon: typeof LayoutDashboard }[] = [
+  { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+  { id: 'calendar', labelKey: 'nav.calendar', icon: CalendarDays },
+  { id: 'transactions', labelKey: 'nav.transactions', icon: ListOrdered },
+  { id: 'budgets', labelKey: 'nav.budgets', icon: PiggyBank },
+  { id: 'recurring', labelKey: 'nav.recurring', icon: Repeat },
+  { id: 'salary', labelKey: 'nav.salary', icon: Banknote },
 ];
 
 function useDarkMode() {
@@ -80,6 +81,7 @@ function useSaveToMarkdown(data: BudgetData) {
 }
 
 function useBackup(data: BudgetData, replaceAll: (next: BudgetData) => void) {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [justOpened, setJustOpened] = useState(false);
@@ -103,18 +105,16 @@ function useBackup(data: BudgetData, replaceAll: (next: BudgetData) => void) {
     reader.onload = () => {
       try {
         const parsed = parseBudgetJson(String(reader.result));
-        const confirmed = window.confirm(
-          `This will replace everything currently in Budgetly with the contents of "${file.name}". This cannot be undone. Continue?`
-        );
+        const confirmed = window.confirm(t('app.confirmReplace', { file: file.name }));
         if (!confirmed) return;
         replaceAll(parsed);
         setJustOpened(true);
         setTimeout(() => setJustOpened(false), 2000);
       } catch (err) {
-        window.alert(err instanceof Error ? err.message : 'Could not read that file.');
+        window.alert(err instanceof Error ? err.message : t('app.couldNotReadFile'));
       }
     };
-    reader.onerror = () => window.alert('Could not read that file.');
+    reader.onerror = () => window.alert(t('app.couldNotReadFile'));
     reader.readAsText(file);
   }
 
@@ -126,6 +126,7 @@ function App() {
   const [monthKey, setMonthKey] = useState(currentMonthKey());
   const { dark, setDark } = useDarkMode();
   const { collapsed, setCollapsed } = useSidebarCollapsed();
+  const { lang, setLang, t } = useLanguage();
   const {
     data,
     addTransaction,
@@ -173,19 +174,19 @@ function App() {
             </div>
             <button
               onClick={() => setCollapsed((c) => !c)}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? t('app.expandSidebar') : t('app.collapseSidebar')}
+              aria-label={collapsed ? t('app.expandSidebar') : t('app.collapseSidebar')}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
             </button>
           </div>
           <nav className="flex flex-1 flex-col gap-1">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                title={collapsed ? label : undefined}
+                title={collapsed ? t(labelKey) : undefined}
                 className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium transition ${
                   collapsed ? 'justify-center px-2' : 'px-3'
                 } ${
@@ -195,13 +196,25 @@ function App() {
                 }`}
               >
                 <Icon size={17} className="shrink-0" />
-                {!collapsed && label}
+                {!collapsed && t(labelKey)}
               </button>
             ))}
           </nav>
           <button
+            onClick={() => setLang(lang === 'en' ? 'tr' : 'en')}
+            title={collapsed ? (lang === 'en' ? 'Türkçe' : 'English') : undefined}
+            className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 ${
+              collapsed ? 'justify-center px-2' : 'px-3'
+            }`}
+          >
+            <span className="flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-full border border-current text-[9px] font-bold uppercase">
+              {lang}
+            </span>
+            {!collapsed && (lang === 'en' ? 'Türkçe' : 'English')}
+          </button>
+          <button
             onClick={saveBackup}
-            title={collapsed ? 'Save backup (.json)' : undefined}
+            title={collapsed ? t('app.saveBackup') : undefined}
             className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 ${
               collapsed ? 'justify-center px-2' : 'px-3'
             }`}
@@ -211,11 +224,11 @@ function App() {
             ) : (
               <Save size={17} className="shrink-0" />
             )}
-            {!collapsed && (justSavedBackup ? 'Saved' : 'Save backup')}
+            {!collapsed && (justSavedBackup ? t('app.saved') : t('app.saveBackup'))}
           </button>
           <button
             onClick={openBackup}
-            title={collapsed ? 'Open backup (.json)' : undefined}
+            title={collapsed ? t('app.openBackup') : undefined}
             className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 ${
               collapsed ? 'justify-center px-2' : 'px-3'
             }`}
@@ -225,11 +238,11 @@ function App() {
             ) : (
               <FolderOpen size={17} className="shrink-0" />
             )}
-            {!collapsed && (justOpenedBackup ? 'Opened' : 'Open backup')}
+            {!collapsed && (justOpenedBackup ? t('app.opened') : t('app.openBackup'))}
           </button>
           <button
             onClick={save}
-            title={collapsed ? 'Save as Markdown' : undefined}
+            title={collapsed ? t('app.saveAsMarkdown') : undefined}
             className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 ${
               collapsed ? 'justify-center px-2' : 'px-3'
             }`}
@@ -239,17 +252,17 @@ function App() {
             ) : (
               <Download size={17} className="shrink-0" />
             )}
-            {!collapsed && (justSaved ? 'Saved' : 'Save as Markdown')}
+            {!collapsed && (justSaved ? t('app.saved') : t('app.saveAsMarkdown'))}
           </button>
           <button
             onClick={() => setDark((d) => !d)}
-            title={collapsed ? (dark ? 'Light mode' : 'Dark mode') : undefined}
+            title={collapsed ? (dark ? t('app.lightMode') : t('app.darkMode')) : undefined}
             className={`flex items-center gap-2.5 rounded-lg py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 ${
               collapsed ? 'justify-center px-2' : 'px-3'
             }`}
           >
             {dark ? <Sun size={17} className="shrink-0" /> : <Moon size={17} className="shrink-0" />}
-            {!collapsed && (dark ? 'Light mode' : 'Dark mode')}
+            {!collapsed && (dark ? t('app.lightMode') : t('app.darkMode'))}
           </button>
         </aside>
 
@@ -263,30 +276,39 @@ function App() {
             </div>
             <div className="flex items-center gap-1">
               <button
+                onClick={() => setLang(lang === 'en' ? 'tr' : 'en')}
+                className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                aria-label={lang === 'en' ? 'Türkçe' : 'English'}
+              >
+                <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-current text-[9px] font-bold uppercase">
+                  {lang}
+                </span>
+              </button>
+              <button
                 onClick={saveBackup}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                aria-label="Save backup"
+                aria-label={t('app.saveBackup')}
               >
                 {justSavedBackup ? <Check size={18} className="text-emerald-500" /> : <Save size={18} />}
               </button>
               <button
                 onClick={openBackup}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                aria-label="Open backup"
+                aria-label={t('app.openBackup')}
               >
                 {justOpenedBackup ? <Check size={18} className="text-emerald-500" /> : <FolderOpen size={18} />}
               </button>
               <button
                 onClick={save}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                aria-label="Save as Markdown"
+                aria-label={t('app.saveAsMarkdown')}
               >
                 {justSaved ? <Check size={18} className="text-emerald-500" /> : <Download size={18} />}
               </button>
               <button
                 onClick={() => setDark((d) => !d)}
                 className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                aria-label="Toggle theme"
+                aria-label={dark ? t('app.lightMode') : t('app.darkMode')}
               >
                 {dark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -331,7 +353,7 @@ function App() {
           </main>
 
           <nav className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:hidden">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            {NAV_ITEMS.map(({ id, labelKey, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -342,7 +364,7 @@ function App() {
                 }`}
               >
                 <Icon size={19} />
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </nav>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Category, Transaction, TransactionType } from '../types';
 import { Modal } from './ui/Modal';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface TransactionFormProps {
   categories: Category[];
@@ -14,6 +15,7 @@ interface TransactionFormProps {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function TransactionForm({ categories, initial, defaultDate, onSubmit, onClose }: TransactionFormProps) {
+  const { t } = useLanguage();
   const [type, setType] = useState<TransactionType>(initial?.type ?? 'expense');
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
   const [categoryId, setCategoryId] = useState(
@@ -37,11 +39,11 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0) {
-      setError('Enter an amount greater than 0');
+      setError(t('transactionForm.errorAmount'));
       return;
     }
     if (!categoryId) {
-      setError('Choose a category');
+      setError(t('transactionForm.errorCategory'));
       return;
     }
     onSubmit({ type, amount: parsedAmount, categoryId, date, note: note.trim() });
@@ -49,30 +51,30 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
   }
 
   return (
-    <Modal title={initial ? 'Edit transaction' : 'Add transaction'} onClose={onClose}>
+    <Modal title={initial ? t('transactionForm.editTitle') : t('transactionForm.addTitle')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
-          {(['expense', 'income'] as TransactionType[]).map((t) => (
+          {(['expense', 'income'] as TransactionType[]).map((optionType) => (
             <button
               type="button"
-              key={t}
-              onClick={() => handleTypeChange(t)}
-              className={`rounded-lg py-2 text-sm font-medium capitalize transition ${
-                type === t
-                  ? t === 'income'
+              key={optionType}
+              onClick={() => handleTypeChange(optionType)}
+              className={`rounded-lg py-2 text-sm font-medium transition ${
+                type === optionType
+                  ? optionType === 'income'
                     ? 'bg-emerald-500 text-white'
                     : 'bg-rose-500 text-white'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
               }`}
             >
-              {t}
+              {optionType === 'income' ? t('common.income') : t('common.expense')}
             </button>
           ))}
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Amount
+            {t('transactionForm.amount')}
           </label>
           <input
             type="number"
@@ -87,7 +89,7 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Category
+            {t('transactionForm.category')}
           </label>
           <select
             value={categoryId}
@@ -104,7 +106,7 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Date
+            {t('transactionForm.date')}
           </label>
           <input
             type="date"
@@ -116,13 +118,13 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Note (optional)
+            {t('transactionForm.note')}
           </label>
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Weekly groceries"
+            placeholder={t('transactionForm.notePlaceholder')}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </div>
@@ -133,7 +135,7 @@ export function TransactionForm({ categories, initial, defaultDate, onSubmit, on
           type="submit"
           className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
         >
-          {initial ? 'Save changes' : 'Add transaction'}
+          {initial ? t('transactionForm.saveChanges') : t('transactionForm.addSubmit')}
         </button>
       </form>
     </Modal>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { BudgetData } from '../types';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface BudgetsPageProps {
   data: BudgetData;
@@ -18,6 +19,7 @@ export function BudgetsPage({
   onSetBudget,
   onRemoveBudget,
 }: BudgetsPageProps) {
+  const { t } = useLanguage();
   const expenseCategories = useMemo(
     () => data.categories.filter((c) => c.type === 'expense'),
     [data.categories]
@@ -56,14 +58,14 @@ export function BudgetsPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Budgets</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t('budgets.title')}</h1>
         <MonthSwitcher monthKey={monthKey} onChange={onMonthChange} />
       </div>
 
       {data.budgets.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="font-medium text-slate-700 dark:text-slate-200">Total budgeted</span>
+            <span className="font-medium text-slate-700 dark:text-slate-200">{t('budgets.totalBudgeted')}</span>
             <span className="text-slate-500 dark:text-slate-400">
               {formatCurrency(totalSpent)} / {formatCurrency(totalLimit)}
             </span>
@@ -105,7 +107,10 @@ export function BudgetsPage({
                 <>
                   <div className="mb-1 flex items-center justify-between text-xs">
                     <span className={over ? 'font-medium text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}>
-                      {formatCurrency(spent)} of {formatCurrency(budget.monthlyLimit)}
+                      {t('budgets.spentOfLimit', {
+                        spent: formatCurrency(spent),
+                        limit: formatCurrency(budget.monthlyLimit),
+                      })}
                     </span>
                     <span className="text-slate-400">{Math.round(percent)}%</span>
                   </div>
@@ -120,7 +125,7 @@ export function BudgetsPage({
                       type="number"
                       min="0"
                       step="0.01"
-                      placeholder="New limit"
+                      placeholder={t('budgets.newLimit')}
                       value={drafts[category.id] ?? ''}
                       onChange={(e) => setDrafts((d) => ({ ...d, [category.id]: e.target.value }))}
                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
@@ -129,13 +134,13 @@ export function BudgetsPage({
                       onClick={() => handleSave(category.id)}
                       className="shrink-0 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300"
                     >
-                      Update
+                      {t('budgets.update')}
                     </button>
                     <button
                       onClick={() => onRemoveBudget(category.id)}
                       className="shrink-0 rounded-lg bg-rose-50 px-2.5 text-xs font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400"
                     >
-                      Remove
+                      {t('budgets.remove')}
                     </button>
                   </div>
                 </>
@@ -145,7 +150,7 @@ export function BudgetsPage({
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="Set monthly limit"
+                    placeholder={t('budgets.setMonthlyLimit')}
                     value={drafts[category.id] ?? ''}
                     onChange={(e) => setDrafts((d) => ({ ...d, [category.id]: e.target.value }))}
                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
@@ -154,7 +159,7 @@ export function BudgetsPage({
                     onClick={() => handleSave(category.id)}
                     className="shrink-0 rounded-lg bg-indigo-600 px-2.5 text-xs font-medium text-white hover:bg-indigo-500"
                   >
-                    Set
+                    {t('budgets.set')}
                   </button>
                 </div>
               )}

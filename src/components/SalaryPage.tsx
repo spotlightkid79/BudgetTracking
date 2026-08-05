@@ -14,26 +14,12 @@ import type { BudgetData, Transaction } from '../types';
 import { DEFAULT_PAYROLL_PARAMS, calcYearlyPayroll, type PayrollParams } from '../lib/turkeyPayroll';
 import { formatCurrency } from '../lib/format';
 import { StatCard } from './ui/StatCard';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface SalaryPageProps {
   data: BudgetData;
   onAddTransaction: (tx: Omit<Transaction, 'id'>) => void;
 }
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 // teal / rose — validated for CVD & contrast in both light and dark surfaces
 const NET_COLOR = '#0d9488';
@@ -45,6 +31,14 @@ function toPercentDisplay(rate: number): number {
 }
 
 export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
+  const { t, intlLocale } = useLanguage();
+  const monthNames = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) =>
+        new Date(2000, i, 1).toLocaleDateString(intlLocale, { month: 'long' })
+      ),
+    [intlLocale]
+  );
   const [grossMonthly, setGrossMonthly] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [categoryId, setCategoryId] = useState(
@@ -67,11 +61,11 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
   const chartData = useMemo(() => {
     if (!results) return [];
     return results.map((r) => ({
-      month: MONTH_NAMES[r.month - 1].slice(0, 3),
+      month: monthNames[r.month - 1].slice(0, 3),
       Net: Math.round(r.net),
       Deductions: Math.round(r.totalDeductions),
     }));
-  }, [results]);
+  }, [results, monthNames]);
 
   function updateParam<K extends keyof PayrollParams>(key: K, value: PayrollParams[K]) {
     setParams((p) => ({ ...p, [key]: value }));
@@ -93,7 +87,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
   function handleAddToTransactions() {
     if (!results || !categoryId) return;
     const existingKeys = new Set(
-      data.transactions.map((t) => `${t.date}|${t.categoryId}|${t.note}`)
+      data.transactions.map((tx) => `${tx.date}|${tx.categoryId}|${tx.note}`)
     );
     let added = 0;
     for (const r of results) {
@@ -112,8 +106,8 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
     }
     setAddedMessage(
       added > 0
-        ? `Added ${added} month${added === 1 ? '' : 's'} of net salary to Transactions for ${year}.`
-        : `All ${year} salary transactions were already added.`
+        ? t('salary.addedMessage', { count: added, year })
+        : t('salary.alreadyAdded', { year })
     );
   }
 
@@ -125,19 +119,16 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          Salary Estimator
+          {t('salary.title')}
         </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Turkish gross-to-net payroll estimate. Income tax uses the cumulative annual method, so
-          net pay typically drifts lower later in the year as earnings cross tax brackets.
-        </p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('salary.description')}</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-              Gross monthly salary (TL)
+              {t('salary.grossMonthlySalary')}
             </label>
             <input
               type="number"
@@ -151,7 +142,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-              Year
+              {t('salary.year')}
             </label>
             <input
               type="number"
@@ -162,7 +153,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-              Income category
+              {t('salary.incomeCategory')}
             </label>
             <select
               value={categoryId}
@@ -183,20 +174,17 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
           className="mt-4 flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
         >
           <Settings2 size={15} />
-          Advanced payroll parameters (2026 defaults)
+          {t('salary.advancedParams')}
           <ChevronDown size={15} className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
         </button>
 
         {showAdvanced && (
           <div className="mt-4 space-y-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              These reflect published 2026 figures. Edit them if official rates change or your
-              situation differs (e.g. a different SGK ceiling).
-            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('salary.advancedDescription')}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Gross minimum wage (TL/mo)
+                  {t('salary.grossMinWage')}
                 </label>
                 <input
                   type="number"
@@ -207,7 +195,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                  SGK premium ceiling (TL/mo)
+                  {t('salary.sgkCeiling')}
                 </label>
                 <input
                   type="number"
@@ -218,7 +206,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Stamp duty rate (%)
+                  {t('salary.stampDutyRate')}
                 </label>
                 <input
                   type="number"
@@ -230,7 +218,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                  SGK employee rate (%)
+                  {t('salary.sgkEmployeeRate')}
                 </label>
                 <input
                   type="number"
@@ -242,7 +230,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Unemployment employee rate (%)
+                  {t('salary.unemploymentRate')}
                 </label>
                 <input
                   type="number"
@@ -256,13 +244,13 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
 
             <div>
               <p className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                Cumulative annual income tax brackets
+                {t('salary.bracketsTitle')}
               </p>
               <div className="space-y-1.5">
                 {params.brackets.map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-16 shrink-0 text-xs text-slate-400">Bracket {i + 1}</span>
-                    <span className="text-xs text-slate-400">up to</span>
+                    <span className="w-16 shrink-0 text-xs text-slate-400">{t('salary.bracket', { n: i + 1 })}</span>
+                    <span className="text-xs text-slate-400">{t('salary.upTo')}</span>
                     <input
                       type="number"
                       disabled={b.upTo === null}
@@ -271,7 +259,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
                       onChange={(e) => updateBracket(i, 'upTo', e.target.value)}
                       className="w-32 rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
                     />
-                    <span className="text-xs text-slate-400">TL @</span>
+                    <span className="text-xs text-slate-400">{t('salary.tlAt')}</span>
                     <input
                       type="number"
                       step="0.1"
@@ -291,14 +279,14 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
       {results && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <StatCard label="January net pay" value={formatCurrency(firstMonthNet)} icon={<span className="text-sm font-bold">1</span>} />
-            <StatCard label="December net pay" value={formatCurrency(lastMonthNet)} icon={<span className="text-sm font-bold">12</span>} tone={lastMonthNet < firstMonthNet ? 'negative' : 'default'} />
-            <StatCard label={`Total net for ${year}`} value={formatCurrency(annualNet)} icon={<span className="text-sm font-bold">∑</span>} tone="positive" />
+            <StatCard label={t('salary.januaryNetPay')} value={formatCurrency(firstMonthNet)} icon={<span className="text-sm font-bold">1</span>} />
+            <StatCard label={t('salary.decemberNetPay')} value={formatCurrency(lastMonthNet)} icon={<span className="text-sm font-bold">12</span>} tone={lastMonthNet < firstMonthNet ? 'negative' : 'default'} />
+            <StatCard label={t('salary.totalNetForYear', { year })} value={formatCurrency(annualNet)} icon={<span className="text-sm font-bold">∑</span>} tone="positive" />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
             <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Net vs. deductions by month
+              {t('salary.netVsDeductions')}
             </h2>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData}>
@@ -307,8 +295,8 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
                 <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" width={70} tickFormatter={(v) => formatCurrency(v)} />
                 <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Net" stackId="pay" fill={NET_COLOR} radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Deductions" stackId="pay" fill={DEDUCTIONS_COLOR} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Net" name={t('salary.net')} stackId="pay" fill={NET_COLOR} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Deductions" name={t('salary.deductions')} stackId="pay" fill={DEDUCTIONS_COLOR} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -317,19 +305,19 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs font-medium uppercase tracking-wide text-slate-400 dark:border-slate-700">
-                  <th className="px-4 py-3">Month</th>
-                  <th className="px-4 py-3 text-right">Gross</th>
-                  <th className="px-4 py-3 text-right">SGK + Unemployment</th>
-                  <th className="px-4 py-3 text-right">Income tax</th>
-                  <th className="px-4 py-3 text-right">Stamp duty</th>
-                  <th className="px-4 py-3 text-right">Net</th>
+                  <th className="px-4 py-3">{t('salary.tableMonth')}</th>
+                  <th className="px-4 py-3 text-right">{t('salary.tableGross')}</th>
+                  <th className="px-4 py-3 text-right">{t('salary.tableSgk')}</th>
+                  <th className="px-4 py-3 text-right">{t('salary.tableIncomeTax')}</th>
+                  <th className="px-4 py-3 text-right">{t('salary.tableStampDuty')}</th>
+                  <th className="px-4 py-3 text-right">{t('salary.tableNet')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {results.map((r) => (
                   <tr key={r.month}>
                     <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-200">
-                      {MONTH_NAMES[r.month - 1]} {year}
+                      {monthNames[r.month - 1]} {year}
                     </td>
                     <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-300">
                       {formatCurrency(r.gross)}
@@ -358,7 +346,7 @@ export function SalaryPage({ data, onAddTransaction }: SalaryPageProps) {
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               <PlusCircle size={16} />
-              Add {year} net salary to Transactions
+              {t('salary.addToTransactions', { year })}
             </button>
             {addedMessage && (
               <span className="text-sm text-slate-500 dark:text-slate-400">{addedMessage}</span>

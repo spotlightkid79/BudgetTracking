@@ -19,9 +19,9 @@ export function formatCurrencyCompact(amount: number): string {
   return compactCurrencyFormatter.format(amount);
 }
 
-export function formatMonthLabel(monthKey: string): string {
+export function formatMonthLabel(monthKey: string, locale = 'en-US'): string {
   const [year, month] = monthKey.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, 1).toLocaleDateString(locale, {
     month: 'long',
     year: 'numeric',
   });

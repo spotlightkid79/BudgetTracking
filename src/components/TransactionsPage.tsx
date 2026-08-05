@@ -4,6 +4,7 @@ import type { BudgetData, Transaction, TransactionType } from '../types';
 import { TransactionForm } from './TransactionForm';
 import { MonthSwitcher } from './ui/MonthSwitcher';
 import { formatCurrency, monthKeyOf } from '../lib/format';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface TransactionsPageProps {
   data: BudgetData;
@@ -22,6 +23,7 @@ export function TransactionsPage({
   onUpdate,
   onDelete,
 }: TransactionsPageProps) {
+  const { t } = useLanguage();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | undefined>(undefined);
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -63,14 +65,14 @@ export function TransactionsPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Transactions</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{t('transactions.title')}</h1>
         <div className="flex items-center gap-3">
           <MonthSwitcher monthKey={monthKey} onChange={onMonthChange} />
           <button
             onClick={openAdd}
             className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
           >
-            <Plus size={16} /> Add
+            <Plus size={16} /> {t('transactions.add')}
           </button>
         </div>
       </div>
@@ -81,7 +83,7 @@ export function TransactionsPage({
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes..."
+            placeholder={t('transactions.searchNotes')}
             className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </div>
@@ -90,16 +92,16 @@ export function TransactionsPage({
           onChange={(e) => setTypeFilter(e.target.value as TransactionType | 'all')}
           className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
         >
-          <option value="all">All types</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
+          <option value="all">{t('transactions.allTypes')}</option>
+          <option value="income">{t('common.income')}</option>
+          <option value="expense">{t('common.expense')}</option>
         </select>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
         >
-          <option value="all">All categories</option>
+          <option value="all">{t('transactions.allCategories')}</option>
           {data.categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -111,46 +113,46 @@ export function TransactionsPage({
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         {filtered.length === 0 ? (
           <p className="p-10 text-center text-sm text-slate-400">
-            No transactions match your filters.
+            {t('transactions.noMatch')}
           </p>
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
-            {filtered.map((t) => {
-              const category = categoryById.get(t.categoryId);
+            {filtered.map((tx) => {
+              const category = categoryById.get(tx.categoryId);
               return (
-                <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                <li key={tx.id} className="flex items-center gap-3 px-4 py-3">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: category?.color ?? '#94a3b8' }}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                      {category?.name ?? 'Unknown'}
-                      {t.note && <span className="text-slate-400"> · {t.note}</span>}
+                      {category?.name ?? t('common.unknown')}
+                      {tx.note && <span className="text-slate-400"> · {tx.note}</span>}
                     </p>
-                    <p className="text-xs text-slate-400">{t.date}</p>
+                    <p className="text-xs text-slate-400">{tx.date}</p>
                   </div>
                   <span
                     className={`text-sm font-semibold ${
-                      t.type === 'income'
+                      tx.type === 'income'
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : 'text-rose-600 dark:text-rose-400'
                     }`}
                   >
-                    {t.type === 'income' ? '+' : '-'}
-                    {formatCurrency(t.amount)}
+                    {tx.type === 'income' ? '+' : '-'}
+                    {formatCurrency(tx.amount)}
                   </span>
                   <button
-                    onClick={() => openEdit(t)}
+                    onClick={() => openEdit(tx)}
                     className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
-                    aria-label="Edit"
+                    aria-label={t('common.edit')}
                   >
                     <Pencil size={15} />
                   </button>
                   <button
-                    onClick={() => onDelete(t.id)}
+                    onClick={() => onDelete(tx.id)}
                     className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30"
-                    aria-label="Delete"
+                    aria-label={t('common.delete')}
                   >
                     <Trash2 size={15} />
                   </button>

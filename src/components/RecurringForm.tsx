@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Category, RecurrenceFrequency, RecurringTransaction, TransactionType } from '../types';
 import { Modal } from './ui/Modal';
+import { useLanguage } from '../lib/i18n/LanguageContext';
 
 interface RecurringFormProps {
   categories: Category[];
@@ -11,6 +12,7 @@ interface RecurringFormProps {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormProps) {
+  const { t } = useLanguage();
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState(categories.find((c) => c.type === 'expense')?.id ?? '');
@@ -32,11 +34,11 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
     e.preventDefault();
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0) {
-      setError('Enter an amount greater than 0');
+      setError(t('recurringForm.errorAmount'));
       return;
     }
     if (!categoryId) {
-      setError('Choose a category');
+      setError(t('recurringForm.errorCategory'));
       return;
     }
     onSubmit({ type, amount: parsedAmount, categoryId, frequency, startDate, note: note.trim() });
@@ -44,30 +46,30 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
   }
 
   return (
-    <Modal title="Add recurring transaction" onClose={onClose}>
+    <Modal title={t('recurringForm.title')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
-          {(['expense', 'income'] as TransactionType[]).map((t) => (
+          {(['expense', 'income'] as TransactionType[]).map((optionType) => (
             <button
               type="button"
-              key={t}
-              onClick={() => handleTypeChange(t)}
-              className={`rounded-lg py-2 text-sm font-medium capitalize transition ${
-                type === t
-                  ? t === 'income'
+              key={optionType}
+              onClick={() => handleTypeChange(optionType)}
+              className={`rounded-lg py-2 text-sm font-medium transition ${
+                type === optionType
+                  ? optionType === 'income'
                     ? 'bg-emerald-500 text-white'
                     : 'bg-rose-500 text-white'
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
               }`}
             >
-              {t}
+              {optionType === 'income' ? t('common.income') : t('common.expense')}
             </button>
           ))}
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Amount
+            {t('recurringForm.amount')}
           </label>
           <input
             type="number"
@@ -82,7 +84,7 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Category
+            {t('recurringForm.category')}
           </label>
           <select
             value={categoryId}
@@ -100,21 +102,21 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-              Frequency
+              {t('recurringForm.frequency')}
             </label>
             <select
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
             >
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
+              <option value="weekly">{t('recurringForm.weeklyOption')}</option>
+              <option value="monthly">{t('recurringForm.monthlyOption')}</option>
+              <option value="yearly">{t('recurringForm.yearlyOption')}</option>
             </select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-              Start date
+              {t('recurringForm.startDate')}
             </label>
             <input
               type="date"
@@ -127,13 +129,13 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-            Note (optional)
+            {t('recurringForm.note')}
           </label>
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Rent"
+            placeholder={t('recurringForm.notePlaceholder')}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           />
         </div>
@@ -144,7 +146,7 @@ export function RecurringForm({ categories, onSubmit, onClose }: RecurringFormPr
           type="submit"
           className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
         >
-          Add recurring rule
+          {t('recurringForm.submit')}
         </button>
       </form>
     </Modal>
