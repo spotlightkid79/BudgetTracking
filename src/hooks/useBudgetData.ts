@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import type {
+  Account,
   Budget,
   BudgetData,
   Category,
@@ -22,6 +23,7 @@ function loadInitialData(): BudgetData {
         transactions: parsed.transactions ?? [],
         recurring: parsed.recurring ?? [],
         budgets: parsed.budgets ?? [],
+        accounts: parsed.accounts ?? [],
       };
     } catch {
       // fall through to defaults if the stored JSON is corrupt
@@ -32,6 +34,7 @@ function loadInitialData(): BudgetData {
     transactions: [],
     recurring: [],
     budgets: [],
+    accounts: [],
   };
 }
 
@@ -72,6 +75,13 @@ export function useBudgetData() {
     setData((prev) => ({
       ...prev,
       transactions: [...prev.transactions, { ...tx, id: uuid() }],
+    }));
+  }, []);
+
+  const addTransactionsBulk = useCallback((txs: Omit<Transaction, 'id'>[]) => {
+    setData((prev) => ({
+      ...prev,
+      transactions: [...prev.transactions, ...txs.map((tx) => ({ ...tx, id: uuid() }))],
     }));
   }, []);
 
@@ -144,9 +154,16 @@ export function useBudgetData() {
     setData(next);
   }, []);
 
+  const addAccount = useCallback((account: Omit<Account, 'id'>) => {
+    const id = uuid();
+    setData((prev) => ({ ...prev, accounts: [...prev.accounts, { ...account, id }] }));
+    return id;
+  }, []);
+
   return {
     data,
     addTransaction,
+    addTransactionsBulk,
     updateTransaction,
     deleteTransaction,
     addCategory,
@@ -156,5 +173,6 @@ export function useBudgetData() {
     addRecurring,
     deleteRecurring,
     replaceAll,
+    addAccount,
   };
 }

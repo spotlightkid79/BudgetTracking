@@ -12,8 +12,10 @@
   "dependencies": {
     "date-fns": "^4.4.0",
     "lucide-react": "^1.28.0",
+    "pdfjs-dist": "^6.2.108",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "read-excel-file": "^9.3.5",
     "recharts": "^3.10.1",
     "uuid": "^14.0.1"
   },

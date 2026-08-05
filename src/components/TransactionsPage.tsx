@@ -29,6 +29,7 @@ export function TransactionsPage({
   const [editing, setEditing] = useState<Transaction | undefined>(undefined);
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [accountFilter, setAccountFilter] = useState('all');
   const [search, setSearch] = useState('');
 
   const categoryById = useMemo(
@@ -36,14 +37,20 @@ export function TransactionsPage({
     [data.categories]
   );
 
+  const accountById = useMemo(
+    () => new Map(data.accounts.map((a) => [a.id, a])),
+    [data.accounts]
+  );
+
   const filtered = useMemo(() => {
     return data.transactions
       .filter((t) => monthKeyOf(t.date) === monthKey)
       .filter((t) => typeFilter === 'all' || t.type === typeFilter)
       .filter((t) => categoryFilter === 'all' || t.categoryId === categoryFilter)
+      .filter((t) => accountFilter === 'all' || t.accountId === accountFilter)
       .filter((t) => t.note.toLowerCase().includes(search.toLowerCase()))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [data.transactions, monthKey, typeFilter, categoryFilter, search]);
+  }, [data.transactions, monthKey, typeFilter, categoryFilter, accountFilter, search]);
 
   function openEdit(tx: Transaction) {
     setEditing(tx);
@@ -109,6 +116,20 @@ export function TransactionsPage({
             </option>
           ))}
         </select>
+        {data.accounts.length > 0 && (
+          <select
+            value={accountFilter}
+            onChange={(e) => setAccountFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <option value="all">{t('transactions.allAccounts')}</option>
+            {data.accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
@@ -120,6 +141,7 @@ export function TransactionsPage({
           <ul className="divide-y divide-slate-100 dark:divide-slate-700">
             {filtered.map((tx) => {
               const category = categoryById.get(tx.categoryId);
+              const account = tx.accountId ? accountById.get(tx.accountId) : undefined;
               return (
                 <li key={tx.id} className="flex items-center gap-3 px-4 py-3">
                   <span
@@ -131,7 +153,15 @@ export function TransactionsPage({
                       {category ? categoryDisplayName(category, t) : t('common.unknown')}
                       {tx.note && <span className="text-slate-400"> · {tx.note}</span>}
                     </p>
-                    <p className="text-xs text-slate-400">{tx.date}</p>
+                    <p className="text-xs text-slate-400">
+                      {tx.date}
+                      {account && (
+                        <>
+                          {' · '}
+                          <span style={{ color: account.color }}>{account.name}</span>
+                        </>
+                      )}
+                    </p>
                   </div>
                   <span
                     className={`text-sm font-semibold ${

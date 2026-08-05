@@ -15,6 +15,7 @@ import {
   Repeat,
   Save,
   Sun,
+  Upload,
   Wallet,
 } from 'lucide-react';
 import { useBudgetData } from './hooks/useBudgetData';
@@ -24,13 +25,14 @@ import { TransactionsPage } from './components/TransactionsPage';
 import { BudgetsPage } from './components/BudgetsPage';
 import { RecurringPage } from './components/RecurringPage';
 import { SalaryPage } from './components/SalaryPage';
+import { ImportPage } from './components/ImportPage';
 import { currentMonthKey } from './lib/format';
 import { exportBudgetAsMarkdown } from './lib/exportMarkdown';
 import { exportBudgetAsJson, parseBudgetJson } from './lib/backup';
 import { useLanguage } from './lib/i18n/LanguageContext';
 import type { BudgetData } from './types';
 
-type Tab = 'dashboard' | 'calendar' | 'transactions' | 'budgets' | 'recurring' | 'salary';
+type Tab = 'dashboard' | 'calendar' | 'transactions' | 'budgets' | 'recurring' | 'salary' | 'import';
 
 const NAV_ITEMS: { id: Tab; labelKey: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
@@ -39,6 +41,7 @@ const NAV_ITEMS: { id: Tab; labelKey: string; icon: typeof LayoutDashboard }[] =
   { id: 'budgets', labelKey: 'nav.budgets', icon: PiggyBank },
   { id: 'recurring', labelKey: 'nav.recurring', icon: Repeat },
   { id: 'salary', labelKey: 'nav.salary', icon: Banknote },
+  { id: 'import', labelKey: 'nav.import', icon: Upload },
 ];
 
 function useDarkMode() {
@@ -130,6 +133,7 @@ function App() {
   const {
     data,
     addTransaction,
+    addTransactionsBulk,
     updateTransaction,
     deleteTransaction,
     setBudget,
@@ -137,6 +141,7 @@ function App() {
     addRecurring,
     deleteRecurring,
     replaceAll,
+    addAccount,
   } = useBudgetData();
   const { save, justSaved } = useSaveToMarkdown(data);
   const {
@@ -350,6 +355,9 @@ function App() {
               <RecurringPage data={data} onAdd={addRecurring} onDelete={deleteRecurring} />
             )}
             {tab === 'salary' && <SalaryPage data={data} onAddTransaction={addTransaction} />}
+            {tab === 'import' && (
+              <ImportPage data={data} onAddAccount={addAccount} onImportTransactions={addTransactionsBulk} />
+            )}
           </main>
 
           <nav className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 md:hidden">

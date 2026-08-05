@@ -23,6 +23,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'nav.budgets': 'Budgets',
     'nav.recurring': 'Recurring',
     'nav.salary': 'Salary',
+    'nav.import': 'Import',
 
     // app shell
     'app.collapseSidebar': 'Collapse sidebar',
@@ -175,6 +176,52 @@ export const translations: Record<Lang, Record<string, string>> = {
     'salary.net': 'Net',
     'salary.deductions': 'Deductions',
     'salary.day': 'Day {day}',
+
+    // dashboard / transactions (accounts)
+    'dashboard.spendingByAccount': 'Spending by account',
+    'transactions.allAccounts': 'All accounts',
+
+    // account form
+    'accountForm.title': 'Add account',
+    'accountForm.name': 'Name',
+    'accountForm.namePlaceholder': 'e.g. Garanti Bonus',
+    'accountForm.color': 'Color',
+    'accountForm.submit': 'Add account',
+    'accountForm.errorName': 'Enter a name',
+
+    // import
+    'import.title': 'Import',
+    'import.description':
+      'Bulk-import transactions from a credit card statement — CSV, Excel, PDF, or pasted text — instead of typing each one in by hand.',
+    'import.chooseAccount': 'Which card is this for?',
+    'import.noAccountsYet': 'No cards yet. Add one to get started.',
+    'import.newAccount': 'Add card',
+    'import.chooseMethod': 'How do you want to bring in the statement?',
+    'import.method.file': 'CSV / Excel',
+    'import.method.fileHint': 'Upload a .csv or .xlsx file exported from your bank',
+    'import.method.pdf': 'PDF statement',
+    'import.method.pdfHint':
+      'Upload a PDF — best-effort text extraction, always review before importing',
+    'import.method.paste': 'Paste text',
+    'import.method.pasteHint': "Copy a transaction table from your bank's website and paste it here",
+    'import.uploadFile': 'Choose a CSV or Excel file',
+    'import.uploadPdf': 'Choose a PDF file',
+    'import.pasteLabel': 'Paste your statement text',
+    'import.pastePlaceholder': '02.08.2026  MIGROS MARKET  245,50 TL\n05.08.2026  NETFLIX.COM  149,99 TL',
+    'import.parse': 'Parse',
+    'import.parsing': 'Parsing…',
+    'import.noRowsFound':
+      'No transactions could be found in that file. Try a different format, or paste the text instead.',
+    'import.parseErrorGeneric': 'Could not read that file.',
+    'import.selectAll': 'Select all',
+    'import.selectNone': 'Select none',
+    'import.rowCount': '{included} of {count} selected',
+    'import.duplicateCount': '{count} possible duplicate(s)',
+    'import.duplicateFlag': 'This looks like it may already be in your transactions',
+    'import.unparsedLines': '{count} line(s) could not be parsed',
+    'import.commit': 'Import {count} transactions',
+    'import.commitSuccess': 'Imported {count} transactions.',
+    'import.startOver': 'Import another statement',
   },
   tr: {
     // default categories
@@ -198,6 +245,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     'nav.budgets': 'Bütçeler',
     'nav.recurring': 'Tekrarlanan',
     'nav.salary': 'Maaş',
+    'nav.import': 'İçe Aktar',
 
     // app shell
     'app.collapseSidebar': 'Kenar çubuğunu daralt',
@@ -350,5 +398,51 @@ export const translations: Record<Lang, Record<string, string>> = {
     'salary.net': 'Net',
     'salary.deductions': 'Kesintiler',
     'salary.day': '{day}. gün',
+
+    // dashboard / transactions (accounts)
+    'dashboard.spendingByAccount': 'Karta göre harcama',
+    'transactions.allAccounts': 'Tüm kartlar',
+
+    // account form
+    'accountForm.title': 'Kart ekle',
+    'accountForm.name': 'İsim',
+    'accountForm.namePlaceholder': 'örn. Garanti Bonus',
+    'accountForm.color': 'Renk',
+    'accountForm.submit': 'Kart ekle',
+    'accountForm.errorName': 'Bir isim girin',
+
+    // import
+    'import.title': 'İçe Aktar',
+    'import.description':
+      "Kredi kartı ekstresinden — CSV, Excel, PDF veya yapıştırılan metin — işlemleri tek tek yazmak yerine toplu olarak içe aktarın.",
+    'import.chooseAccount': 'Bu hangi kart için?',
+    'import.noAccountsYet': 'Henüz kart yok. Başlamak için bir tane ekleyin.',
+    'import.newAccount': 'Kart ekle',
+    'import.chooseMethod': 'Ekstreyi nasıl aktarmak istersiniz?',
+    'import.method.file': 'CSV / Excel',
+    'import.method.fileHint': 'Bankanızdan indirdiğiniz .csv veya .xlsx dosyasını yükleyin',
+    'import.method.pdf': 'PDF ekstre',
+    'import.method.pdfHint':
+      'PDF yükleyin — en iyi çaba ile metin çıkarma, içe aktarmadan önce mutlaka gözden geçirin',
+    'import.method.paste': 'Metin yapıştır',
+    'import.method.pasteHint': 'Bankanızın web sitesinden işlem tablosunu kopyalayıp buraya yapıştırın',
+    'import.uploadFile': 'Bir CSV veya Excel dosyası seçin',
+    'import.uploadPdf': 'Bir PDF dosyası seçin',
+    'import.pasteLabel': 'Ekstre metninizi yapıştırın',
+    'import.pastePlaceholder': '02.08.2026  MIGROS MARKET  245,50 TL\n05.08.2026  NETFLIX.COM  149,99 TL',
+    'import.parse': 'Ayrıştır',
+    'import.parsing': 'Ayrıştırılıyor…',
+    'import.noRowsFound':
+      'Bu dosyada işlem bulunamadı. Farklı bir format deneyin veya metni yapıştırın.',
+    'import.parseErrorGeneric': 'Dosya okunamadı.',
+    'import.selectAll': 'Tümünü seç',
+    'import.selectNone': 'Hiçbirini seçme',
+    'import.rowCount': '{count} kayıttan {included} tanesi seçili',
+    'import.duplicateCount': '{count} olası tekrar',
+    'import.duplicateFlag': 'Bu, işlemlerinizde zaten olabilir',
+    'import.unparsedLines': '{count} satır ayrıştırılamadı',
+    'import.commit': '{count} işlemi içe aktar',
+    'import.commitSuccess': '{count} işlem içe aktarıldı.',
+    'import.startOver': 'Başka bir ekstre aktar',
   },
 };

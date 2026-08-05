@@ -1,4 +1,4 @@
-import type { Budget, BudgetData, Category, RecurringTransaction, Transaction } from '../types';
+import type { Account, Budget, BudgetData, Category, RecurringTransaction, Transaction } from '../types';
 import { downloadTextFile } from './download';
 
 const BACKUP_VERSION = 1;
@@ -49,8 +49,15 @@ function isTransaction(v: unknown): v is Transaction {
     isNumber(t.amount) &&
     isString(t.categoryId) &&
     isString(t.date) &&
-    isString(t.note)
+    isString(t.note) &&
+    (t.accountId === undefined || isString(t.accountId))
   );
+}
+
+function isAccount(v: unknown): v is Account {
+  if (typeof v !== 'object' || v === null) return false;
+  const a = v as Record<string, unknown>;
+  return isString(a.id) && isString(a.name) && isString(a.color);
 }
 
 function isBudget(v: unknown): v is Budget {
@@ -99,6 +106,7 @@ export function parseBudgetJson(raw: string): BudgetData {
   const transactions = c.transactions;
   const budgets = c.budgets;
   const recurring = c.recurring;
+  const accounts = c.accounts;
 
   if (
     !Array.isArray(categories) ||
@@ -122,5 +130,9 @@ export function parseBudgetJson(raw: string): BudgetData {
     throw new Error('That file has invalid recurring transaction data.');
   }
 
-  return { categories, transactions, budgets, recurring };
+  // Accounts were added after the original backup format, so older backups
+  // simply won't have this field — default to empty rather than rejecting them.
+  const validAccounts = Array.isArray(accounts) && accounts.every(isAccount) ? accounts : [];
+
+  return { categories, transactions, budgets, recurring, accounts: validAccounts };
 }

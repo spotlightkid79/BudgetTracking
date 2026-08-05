@@ -71,6 +71,24 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
       .sort((a, b) => b.value - a.value);
   }, [monthTransactions, categoryById, t]);
 
+  const accountBreakdown = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const t of monthTransactions) {
+      if (t.type !== 'expense' || !t.accountId) continue;
+      totals.set(t.accountId, (totals.get(t.accountId) ?? 0) + t.amount);
+    }
+    return Array.from(totals.entries())
+      .map(([accountId, value]) => {
+        const account = data.accounts.find((a) => a.id === accountId);
+        return {
+          name: account?.name ?? t('common.unknown'),
+          value,
+          color: account?.color ?? '#94a3b8',
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+  }, [monthTransactions, data.accounts, t]);
+
   const trend = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => shiftMonthKey(monthKey, i - 5));
     return months.map((mk) => {
@@ -208,6 +226,36 @@ export function Dashboard({ data, monthKey, onMonthChange }: DashboardProps) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {data.accounts.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {t('dashboard.spendingByAccount')}
+          </h2>
+          {accountBreakdown.length === 0 ? (
+            <p className="py-12 text-center text-sm text-slate-400">{t('dashboard.noExpensesThisMonth')}</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={accountBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={85}
+                  paddingAngle={2}
+                >
+                  {accountBreakdown.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: unknown) => formatCurrency(Number(v))} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">

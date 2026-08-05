@@ -7,6 +7,12 @@ export interface Category {
   type: TransactionType;
 }
 
+export interface Account {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
@@ -14,6 +20,7 @@ export interface Transaction {
   categoryId: string;
   date: string; // ISO date (yyyy-mm-dd)
   note: string;
+  accountId?: string;
 }
 
 export type RecurrenceFrequency = 'weekly' | 'monthly' | 'yearly';
@@ -40,4 +47,5 @@ export interface BudgetData {
   transactions: Transaction[];
   recurring: RecurringTransaction[];
   budgets: Budget[];
+  accounts: Account[];
 }
