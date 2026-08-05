@@ -9,7 +9,7 @@ interface CategoryRule {
 export const IMPORT_CATEGORY_RULES: CategoryRule[] = [
   {
     categoryId: 'cat-groceries',
-    keywords: ['migros', 'carrefour', 'a101', 'bim', 'şok', 'sok market', 'market'],
+    keywords: ['migros', 'carrefour', 'a101', 'bim', 'şok', 'sok market', 'erikli', 'market'],
   },
   {
     categoryId: 'cat-dining',
@@ -36,6 +36,7 @@ export const IMPORT_CATEGORY_RULES: CategoryRule[] = [
       'bitaksi',
       'iett',
       'metro istanbul',
+      'marmaray',
       'otopark',
       'taxi',
       'taksi',
@@ -47,7 +48,15 @@ export const IMPORT_CATEGORY_RULES: CategoryRule[] = [
   },
   {
     categoryId: 'cat-utilities',
-    keywords: ['türk telekom', 'turkcell', 'vodafone', 'elektrik', 'doğalgaz', 'internet fatura'],
+    keywords: [
+      'türk telekom',
+      'türktelekom',
+      'turkcell',
+      'vodafone',
+      'elektrik',
+      'doğalgaz',
+      'internet fatura',
+    ],
   },
   {
     categoryId: 'cat-shopping',

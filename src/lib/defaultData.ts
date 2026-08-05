@@ -13,5 +13,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-entertainment', name: 'Entertainment', color: '#ec4899', type: 'expense' },
   { id: 'cat-health', name: 'Health', color: '#14b8a6', type: 'expense' },
   { id: 'cat-shopping', name: 'Shopping', color: '#f97316', type: 'expense' },
+  { id: 'cat-food', name: 'Food', color: '#eab308', type: 'expense' },
+  { id: 'cat-sports', name: 'Sports', color: '#06b6d4', type: 'expense' },
   { id: 'cat-other-expense', name: 'Other', color: '#64748b', type: 'expense' },
 ];

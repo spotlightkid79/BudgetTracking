@@ -13,13 +13,21 @@ import { applyDueRecurring } from '../lib/recurring';
 
 const STORAGE_KEY = 'budget-tracker-data';
 
+/** Adds any new default categories (shipped in later app updates) that aren't already in the user's stored data. */
+function withMissingDefaultCategories(categories: Category[] | undefined): Category[] {
+  const existing = categories ?? [];
+  const existingIds = new Set(existing.map((c) => c.id));
+  const missing = DEFAULT_CATEGORIES.filter((c) => !existingIds.has(c.id));
+  return [...existing, ...missing];
+}
+
 function loadInitialData(): BudgetData {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as BudgetData;
       return {
-        categories: parsed.categories ?? DEFAULT_CATEGORIES,
+        categories: withMissingDefaultCategories(parsed.categories),
         transactions: parsed.transactions ?? [],
         recurring: parsed.recurring ?? [],
         budgets: parsed.budgets ?? [],
@@ -151,7 +159,7 @@ export function useBudgetData() {
   }, []);
 
   const replaceAll = useCallback((next: BudgetData) => {
-    setData(next);
+    setData({ ...next, categories: withMissingDefaultCategories(next.categories) });
   }, []);
 
   const addAccount = useCallback((account: Omit<Account, 'id'>) => {

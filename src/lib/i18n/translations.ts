@@ -14,6 +14,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'category.cat-entertainment': 'Entertainment',
     'category.cat-health': 'Health',
     'category.cat-shopping': 'Shopping',
+    'category.cat-food': 'Food',
+    'category.cat-sports': 'Sports',
     'category.cat-other-expense': 'Other',
 
     // nav
@@ -236,6 +238,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     'category.cat-entertainment': 'Eğlence',
     'category.cat-health': 'Sağlık',
     'category.cat-shopping': 'Alışveriş',
+    'category.cat-food': 'Gıda',
+    'category.cat-sports': 'Spor',
     'category.cat-other-expense': 'Diğer',
 
     // nav
